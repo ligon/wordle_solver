@@ -41,7 +41,13 @@ def suggestion(guesses,answers,criterion=np.mean):
     S = scoring(guesses,answers)
     
     df = pd.DataFrame(zip(*[(s,criterion(list(S[s].values()))) for s in guesses])).T.set_index(0).squeeze().astype(float)
-    return df.idxmin()
+
+    answer_soltns = list(set(df.loc[df==df.min()].index.tolist()).intersection(answers))
+
+    if len(answer_soltns):      # If multiple words shrink the set similarly, and some are answers...
+        return answer_soltns[0] # ...then take a chance at getting it in one.
+    else:
+        return df.idxmin()
 
 def play_manually(guesses,answers,answer=None):
     i=0
@@ -74,10 +80,11 @@ def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean):
     """
     i=0
     while len(answers)>1:
-        print(guess,len(answers))
+        print(len(answers))
         response = wordle(guess,answer)
         answers = interpret_response(guess,response,answers)
         print(sorted(answers))
+        print(guess,end='')
         guess = suggestion(guesses,answers,criterion=criterion)
         i += 1
 
@@ -91,5 +98,6 @@ if __name__=='__main__':
     #S = main()
     #df = pd.DataFrame(zip(*[(s,np.mean(list(S[s].values()))) for s in Guesses])).T.set_index(0).squeeze().astype(float)
     #print(df.idxmin())
-    #autoplay(Guesses,Answers,'tangy',guess='roate')
-    play_manually(Guesses,Answers)
+    autoplay(Guesses,Answers,'panic',guess='roate')
+    #play_manually(Guesses,Answers)
+    
