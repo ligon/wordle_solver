@@ -3,9 +3,23 @@ from wordle_explorer import interpret_response
 from collections import defaultdict
 import numpy as np
 import pandas as pd
-import time 
+import datetime
+import time
 
 Guesses = Answers + Ta
+
+# Get rid of obsolete answers
+days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
+Answers = Answers[days_elapsed:]
+
+def quantile_criterion(q):
+    """
+    Return 
+    """
+    def foo(x):
+        return np.percentile(x,q)
+
+    return foo
 
 def wordle(guess, answer):
     res = ''
@@ -74,6 +88,33 @@ def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
 
     return answers,i
 
+def initial_guess(rho=None,fn='first_round_reductions.csv.gz'):
+    """Choose "optimal" initial guess.  By default this is (one of) the
+    guesses that reduces list size the most *on average*.
+
+    If risk_aversion is supplied (a float in (0,1)), then when the
+    parameter is low this chooses riskier guesses---a riskier guess
+    increases the probability of completing the puzzle in fewer moves,
+    but at cost of possibly failing badly.
+    """
+
+    df = pd.read_csv(fn,index_col=0)
+
+    # Drop answers to old puzzles
+    df = df.iloc[:,days_elapsed:]
+
+    if rho is None:
+        df = df.mean(axis=1)
+    else:
+        df = df.quantile(rho,axis=1)
+        
+    answer_soltns = list(set(df.loc[df==df.min()].index.tolist()).intersection(Answers))
+
+    if len(answer_soltns):      # If multiple words shrink the set similarly, and some are answers...
+        return answer_soltns[0] # ...then take a chance at getting it in one.
+    else:
+        return df.idxmin()
+    
 def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean):
     """
     Conduct play in ignorance of answer, return number of rounds.
@@ -98,6 +139,8 @@ if __name__=='__main__':
     #S = main()
     #df = pd.DataFrame(zip(*[(s,np.mean(list(S[s].values()))) for s in Guesses])).T.set_index(0).squeeze().astype(float)
     #print(df.idxmin())
-    autoplay(Guesses,Answers,'panic',guess='roate')
+    rho = 0.3
+    guess = initial_guess(rho=rho,fn='first_round_reductions.csv.gz')
+    autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho))
     #play_manually(Guesses,Answers)
     
