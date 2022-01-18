@@ -121,11 +121,11 @@ def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean):
     """
     i=0
     while len(answers)>1:
-        print(len(answers))
+        print('Number of possible answers: %d' % len(answers))
         response = wordle(guess,answer)
         answers = interpret_response(guess,response,answers)
-        print(sorted(answers))
-        print(guess,end='')
+        #print(sorted(answers))
+        print(guess,end=' ')
         guess = suggestion(guesses,answers,criterion=criterion)
         i += 1
 
