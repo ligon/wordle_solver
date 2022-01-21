@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from wordle_words import La as Answers, Ta 
 from wordle_explorer import interpret_response
 from collections import defaultdict
@@ -5,6 +7,7 @@ import numpy as np
 import pandas as pd
 import datetime
 import time
+import argparse
 
 Guesses = Answers + Ta
 
@@ -115,20 +118,26 @@ def initial_guess(rho=None,fn='first_round_reductions.csv.gz'):
     else:
         return df.idxmin()
     
-def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean):
+def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean,verbose=False):
     """
     Conduct play in ignorance of answer, return number of rounds.
     """
     i=0
     while len(answers)>1:
+        if verbose and i>0:
+            print(sorted(answers))
         print('Number of possible answers: %d' % len(answers))
         response = wordle(guess,answer)
         answers = interpret_response(guess,response,answers)
-        #print(sorted(answers))
         print(guess,end=' ')
         guess = suggestion(guesses,answers,criterion=criterion)
         i += 1
 
+    if len(answers):
+        print('\nAnswer is %s' % answers[0])
+    else:
+        print('\nAnswer is %s.' % guess)
+    
     return i
 
 
@@ -136,11 +145,31 @@ def main():
     return scoring(Guesses,Answers)
 
 if __name__=='__main__':
-    #S = main()
-    #df = pd.DataFrame(zip(*[(s,np.mean(list(S[s].values()))) for s in Guesses])).T.set_index(0).squeeze().astype(float)
-    #print(df.idxmin())
-    rho = 0.3
-    guess = initial_guess(rho=rho,fn='first_round_reductions.csv.gz')
-    autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho))
+    parser = argparse.ArgumentParser('Find optimal solution to wordle.')
+    parser.add_argument('--risk_aversion',type=float,
+                        help="Number in (0,1) to choose how conservatively to play, using quantile criterion.",
+                        default=None)
+
+    parser.add_argument('--guess',type=str,
+                        help="Provide initial guess (five letters).",
+                        default=None)
+
+    parser.add_argument('--verbose','-v',action='store_true',
+                        help="Show possible remaining answers")
+
+
+    args = parser.parse_args()
+    
+    rho = args.risk_aversion
+    guess = args.guess
+
+    if guess is None:
+        guess = initial_guess(rho=rho,fn='first_round_reductions.csv.gz')
+        
+    if rho is None:
+        autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose)
+    else:
+        autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose)
+
     #play_manually(Guesses,Answers)
     
