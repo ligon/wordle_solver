@@ -1,0 +1,37 @@
+* Watch Robbie Go!
+:PROPERTIES:
+:EXPORT_FILE_NAME: autoplay.ipynb
+:END:
+  Watch Robbie solve Wordle.  You can choose among several different
+  criteria he uses--these will affect the kinds of risks he'll take to
+  try and solve the puzzle in as few steps as possible.
+
+** Criteria
+   Here are some different criteria that Robbie will attempt to
+   minimize on each turn.  Uncomment the one you want, or accept the
+   default. 
+#+begin_src ipython
+from wordle_optimizer import quantile_criterion, mean, mse, crra
+
+# criterion = mean # Minimize expected length of list after guess
+# criterion = mse  # Minimize expected length squared of list after guess (more risk-averse)
+
+# Change the number to something smaller (in (0,1) to make Robbie more risk-seeking.
+# criterion = quantile_criterion(0.5)  
+
+# Pick a negative number for risk-seeking, positive for risk-averse
+# criterion = crra(1.0)
+#+end_src
+
+** Autoplay
+
+#+begin_src ipython
+from wordle_optimizer import Answers, Guesses, autoplay
+
+# Set to True to see lists of remaining possible answers after each guess
+verbose = False 
+
+guess = None  # Supply an initial guess here if you wish...
+
+autoplay()
+#+end_src
