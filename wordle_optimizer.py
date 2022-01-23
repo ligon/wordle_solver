@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from wordle_words import La as Answers, Ta 
 from wordle_explorer import interpret_response
@@ -8,6 +9,7 @@ import pandas as pd
 import datetime
 import time
 import argparse
+from string import ascii_lowercase, ascii_uppercase
 
 Guesses = Answers + Ta
 
@@ -122,36 +124,74 @@ def initial_guess(criterion=mean,fn='first_round_reductions.csv.gz'):
     else:
         return df.idxmin()
     
-def autoplay(guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',criterion=mean,verbose=False):
+def autoplay(guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',criterion=mean,verbose=False,show_progress=True):
     """
     Conduct play in ignorance of answer, return number of rounds.
     """
     i=0
+
+    Sequence = []
     
     if guess is None:
         guess = initial_guess(criterion=criterion,fn='first_round_reductions.csv.gz')
 
     while len(answers)>1:
-        if verbose and i>0:
+        round = {}
+        if verbose and i>0 and show_progress:
             print(sorted(answers))
         print('Number of possible answers: %d' % len(answers))
+        round['guess'] = guess.upper()
         response = wordle(guess,answer)
+        round['response'] = response
         answers = interpret_response(guess,response,answers)
-        print(guess,end=' ')
+        round['answers'] = sorted(answers)
+        if show_progress:
+            print(guess,end=' ')
         guess = suggestion(guesses,answers,criterion=criterion)
+        Sequence.append(round)
         i += 1
 
     if len(answers):
-        print('\nAnswer is %s' % answers[0])
+        soltn = answers[0]
     else:
-        print('\nAnswer is %s.' % guess)
-    
-    return i
+        soltn = guess
 
+    round = {'guess':soltn.upper(),
+             'response':soltn.upper(),
+             'answers':[soltn]}
 
-def main():
-    return scoring(Guesses,Answers)
+    if show_progress:
+        print('\nAnswer is %s' % soltn)
 
+    Sequence.append(round)
+            
+    return Sequence
+
+def show_play_no_spoilers(Sequence):
+    """
+    "No spoiler" version of play.
+    """
+    def redact_response(response):
+        redaction = ''
+        for c in response:
+            if c in ascii_uppercase:
+                redaction += "🟩"
+            elif c in ascii_lowercase:
+                redaction += '🟨'
+            else:
+                redaction += '⬛'
+
+        return redaction
+                
+    S = []            
+    for i,round in enumerate(Sequence):
+        redaction = redact_response(round['response'])
+        s = "{}. {} ({})".format(i+1,redaction,len(round['answers']))
+        S.append(s)
+
+    return S
+
+        
 if __name__=='__main__':
     parser = argparse.ArgumentParser('Find optimal solution to wordle.')
     parser.add_argument('--risk_aversion',type=float,
@@ -176,12 +216,12 @@ if __name__=='__main__':
     guess = args.guess
 
     if args.criterion is not None:
-        autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose,criterion=eval(args.criterion))
+        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose,criterion=eval(args.criterion))
     
     elif rho is None:
-        autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose)
+        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose)
     else:
-        autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose)
+        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose)
 
-    #play_manually(Guesses,Answers)
-    
+    S = show_play_no_spoilers(Sequence)
+    print("\n".join(S))
