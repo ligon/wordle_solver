@@ -15,6 +15,9 @@ Guesses = Answers + Ta
 days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
 Answers = Answers[days_elapsed:]
 
+#########################
+# Some possible criteria
+
 def quantile_criterion(q):
     """
     Return 
@@ -23,6 +26,14 @@ def quantile_criterion(q):
         return np.percentile(x,q)
 
     return foo
+
+mse = lambda x: np.mean(np.array(x)**2)
+
+mean = lambda x: np.mean(np.array(x))
+
+crra = lambda gamma=1 : lambda x: np.log(np.array(x)) if gamma==1 else (np.mean(np.array(x)**(1-gamma))/(1-gamma))
+
+##########################
 
 def wordle(guess, answer):
     res = ''
@@ -91,14 +102,10 @@ def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
 
     return answers,i
 
-def initial_guess(rho=None,fn='first_round_reductions.csv.gz'):
+def initial_guess(criterion=mean,fn='first_round_reductions.csv.gz'):
     """Choose "optimal" initial guess.  By default this is (one of) the
-    guesses that reduces list size the most *on average*.
-
-    If risk_aversion is supplied (a float in (0,1)), then when the
-    parameter is low this chooses riskier guesses---a riskier guess
-    increases the probability of completing the puzzle in fewer moves,
-    but at cost of possibly failing badly.
+    guesses that reduces list size the most *on average*, but
+    alternative criteria can be supplied.
     """
 
     df = pd.read_csv(fn,index_col=0)
@@ -106,10 +113,7 @@ def initial_guess(rho=None,fn='first_round_reductions.csv.gz'):
     # Drop answers to old puzzles
     df = df.iloc[:,days_elapsed:]
 
-    if rho is None:
-        df = df.mean(axis=1)
-    else:
-        df = df.quantile(rho,axis=1)
+    df = df.apply(criterion,axis=1)
         
     answer_soltns = list(set(df.loc[df==df.min()].index.tolist()).intersection(Answers))
 
@@ -118,11 +122,15 @@ def initial_guess(rho=None,fn='first_round_reductions.csv.gz'):
     else:
         return df.idxmin()
     
-def autoplay(guesses,answers,answer,guess='roate',criterion=np.mean,verbose=False):
+def autoplay(guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',criterion=mean,verbose=False):
     """
     Conduct play in ignorance of answer, return number of rounds.
     """
     i=0
+    
+    if guess is None:
+        guess = initial_guess(criterion=criterion,fn='first_round_reductions.csv.gz')
+
     while len(answers)>1:
         if verbose and i>0:
             print(sorted(answers))
@@ -154,6 +162,10 @@ if __name__=='__main__':
                         help="Provide initial guess (five letters).",
                         default=None)
 
+    parser.add_argument('--criterion',type=str,
+                        help="Use alternative criterion",
+                        default=None)
+
     parser.add_argument('--verbose','-v',action='store_true',
                         help="Show possible remaining answers")
 
@@ -163,10 +175,10 @@ if __name__=='__main__':
     rho = args.risk_aversion
     guess = args.guess
 
-    if guess is None:
-        guess = initial_guess(rho=rho,fn='first_round_reductions.csv.gz')
-        
-    if rho is None:
+    if args.criterion is not None:
+        autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose,criterion=eval(args.criterion))
+    
+    elif rho is None:
         autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose)
     else:
         autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose)
