@@ -13,9 +13,20 @@ from string import ascii_lowercase, ascii_uppercase
 
 Guesses = Answers + Ta
 
-# Get rid of obsolete answers
-days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
-Answers = Answers[days_elapsed:]
+def puzzle_date(Answers,YMD=None):
+    """
+    For date specified as (Y,M,D) triple of ints return "puzzle_date" & answer.
+
+    If drop_old, modify Answers to drop past puzzle answers.
+    """
+    if YMD is None:
+        days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
+    else:
+        days_elapsed = (datetime.date(*YMD) - datetime.date(2021, 6, 19)).days
+
+    answer = Answers[days_elapsed]
+    
+    return days_elapsed, answer
 
 #########################
 # Some possible criteria
@@ -104,7 +115,7 @@ def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
 
     return answers,i
 
-def initial_guess(criterion=mean,fn='first_round_reductions.csv.gz'):
+def initial_guess(Answers,days_elapsed,criterion=mean,fn='first_round_reductions.csv.gz',drop_old=True):
     """Choose "optimal" initial guess.  By default this is (one of) the
     guesses that reduces list size the most *on average*, but
     alternative criteria can be supplied.
@@ -113,7 +124,8 @@ def initial_guess(criterion=mean,fn='first_round_reductions.csv.gz'):
     df = pd.read_csv(fn,index_col=0)
 
     # Drop answers to old puzzles
-    df = df.iloc[:,days_elapsed:]
+    if drop_old and days_elapsed is not None:
+        df = df.iloc[:,days_elapsed:]
 
     df = df.apply(criterion,axis=1)
         
@@ -124,7 +136,7 @@ def initial_guess(criterion=mean,fn='first_round_reductions.csv.gz'):
     else:
         return df.idxmin()
     
-def autoplay(guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',criterion=mean,verbose=False,show_progress=True):
+def autoplay(days_elapsed=None,guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',criterion=mean,verbose=False,show_progress=True,drop_old=True):
     """
     Conduct play in ignorance of answer, return number of rounds.
     """
@@ -132,8 +144,10 @@ def autoplay(guesses=Guesses,answers=Answers,answer=Answers[0],guess='roate',cri
 
     Sequence = []
     
+    if drop_old: answers = answers[days_elapsed:]
+
     if guess is None:
-        guess = initial_guess(criterion=criterion,fn='first_round_reductions.csv.gz')
+        guess = initial_guess(answers,days_elapsed,criterion=criterion,fn='first_round_reductions.csv.gz',drop_old=drop_old)
 
     while len(answers)>1:
         round = {}
@@ -209,19 +223,25 @@ if __name__=='__main__':
     parser.add_argument('--verbose','-v',action='store_true',
                         help="Show possible remaining answers")
 
+    parser.add_argument('--keep_old',action='store_true',
+                        help="Keep old answers")
+
 
     args = parser.parse_args()
-    
+
+    drop_old = not args.keep_old
     rho = args.risk_aversion
     guess = args.guess
 
+    days_elapsed,answer = puzzle_date(Answers,YMD=None)
+    
     if args.criterion is not None:
-        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose,criterion=eval(args.criterion))
+        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,criterion=eval(args.criterion),drop_old=drop_old)
     
     elif rho is None:
-        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,verbose=args.verbose)
+        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,drop_old=drop_old)
     else:
-        Sequence = autoplay(Guesses,Answers,Answers[0],guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose)
+        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose,drop_old=drop_old)
 
     S = show_play_no_spoilers(Sequence)
     print("\n".join(S))
