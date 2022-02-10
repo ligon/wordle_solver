@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from wordle_words import La as Answers, Ta 
@@ -36,18 +36,6 @@ mean = lambda x: np.mean(np.array(x))
 crra = lambda gamma=1 : lambda x: np.log(np.array(x)) if gamma==1 else (np.mean(np.array(x)**(1-gamma))/(1-gamma))
 
 ##########################
-
-
-def wordle2(guess, answer):
-    res = ''
-    for i,letter in enumerate(guess):
-        if letter == answer[i]:
-            res+=letter.upper()
-        elif letter in answer:
-            res+=letter
-        else:
-            res+=' '
-    return res
 
 def wordle(guess, answer):
     # default to no occurences
