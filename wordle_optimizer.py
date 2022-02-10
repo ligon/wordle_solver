@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from wordle_words import La as Answers, Ta 
@@ -37,7 +37,8 @@ crra = lambda gamma=1 : lambda x: np.log(np.array(x)) if gamma==1 else (np.mean(
 
 ##########################
 
-def wordle(guess, answer):
+
+def wordle2(guess, answer):
     res = ''
     for i,letter in enumerate(guess):
         if letter == answer[i]:
@@ -48,6 +49,22 @@ def wordle(guess, answer):
             res+=' '
     return res
 
+def wordle(guess, answer):
+    # default to no occurences
+    response="     "
+    response=list(response)
+    # give precedence to perfect matches
+    for i,letter in enumerate(guess):
+        if answer[i] is letter:
+            response[i] = letter.upper()
+    # precedence from left to right of imperfect matches
+    for i,letter in enumerate(guess):
+        if letter in answer:
+            if answer.count(letter) > response.count(letter):
+                response[i] = letter
+    return ''.join(response)
+                
+        
 def scoring(guesses,answers):
     start = time.process_time()
     
