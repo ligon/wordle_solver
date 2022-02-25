@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from wordle_words import La as Answers, Ta 
+#from wordle_words import La as Answers, Ta
+from update_word_lists import Answers, Guesses
 from wordle_explorer import interpret_response
 from collections import defaultdict
 import numpy as np
@@ -9,9 +10,10 @@ import pandas as pd
 import datetime
 import time
 import argparse
+import re
 from string import ascii_lowercase, ascii_uppercase
 
-Guesses = Answers + Ta
+#Guesses = Answers + Ta
 
 def puzzle_date(Answers,YMD=None):
     """
@@ -20,7 +22,7 @@ def puzzle_date(Answers,YMD=None):
     If drop_old, modify Answers to drop past puzzle answers.
     """
     if YMD is None:
-        days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
+        days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 20)).days
     else:
         days_elapsed = (datetime.date(*YMD) - datetime.date(2021, 6, 19)).days
 
@@ -115,13 +117,16 @@ def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
 
     return answers,i
 
-def initial_guess(Answers,days_elapsed,criterion=mean,fn='first_round_reductions.csv.gz',drop_old=True):
+def initial_guess(Answers,days_elapsed,criterion=mean,fn='first_round_reductions.csv.gz',drop_old=True,Guesses=Guesses):
     """Choose "optimal" initial guess.  By default this is (one of) the
     guesses that reduces list size the most *on average*, but
     alternative criteria can be supplied.
     """
 
-    df = pd.read_csv(fn,index_col=0)
+    openbook = pd.read_csv(fn,index_col=0)
+
+    # Drop entries for words dropped by the NYT
+    df = openbook.loc[openbook.index.intersection(Guesses),openbook.columns.intersection(Answers)]
 
     # Drop answers to old puzzles
     if drop_old and days_elapsed is not None:
