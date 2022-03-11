@@ -22,7 +22,7 @@ def puzzle_date(Answers,YMD=None):
     If drop_old, modify Answers to drop past puzzle answers.
     """
     if YMD is None:
-        days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 20)).days
+        days_elapsed = (datetime.datetime.now().date() - datetime.date(2021, 6, 19)).days
     else:
         days_elapsed = (datetime.date(*YMD) - datetime.date(2021, 6, 19)).days
 
