@@ -62,7 +62,7 @@ def wordle(guess, answer):
 
     # Precedence from left to right of imperfect matches
     for i,letter in enumerate(guess):
-        if answer.count(letter) > response.count(letter) + response.count(letter.upper())
+        if answer.count(letter) > response.count(letter) + response.count(letter.upper()):
             if response[i] != letter.upper():
                 response[i] = letter
 
