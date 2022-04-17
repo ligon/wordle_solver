@@ -119,18 +119,25 @@ def play_manually(guesses,answers,answer=None):
 
 def human_play(guesses,answers,answer=None):
     i=0
+    if answer is None:
+        days_elapsed,answer = puzzle_date(Answers,YMD=None)
+
+    Sequence = []
     while len(answers)>1:
         guess = input('What is next guess? ')
-        if answer is None:
-            response = input('What is response to "%s"? ' % guess)
-        else:
-            response = wordle(guess,answer)
+        Sequence += guess
+
+        response = wordle(guess,answer)
+
         answers = interpret_response(guess,response,answers)
+
         print(redact_response(response))
+
+        print(','.join(sorted(set(''.join(answers)))))
         #print(len(answers),answers)
         i += 1
 
-    return answers,i
+    return Sequence
 
 def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
     i=0
@@ -259,6 +266,9 @@ if __name__=='__main__':
     parser.add_argument('--verbose','-v',action='store_true',
                         help="Show possible remaining answers")
 
+    parser.add_argument('--play','-p',action='store_true',
+                        help="Human play")
+
     parser.add_argument('--keep_old',action='store_true',
                         help="Keep old answers")
 
@@ -273,8 +283,11 @@ if __name__=='__main__':
     else:
         answer = args.answer
         days_elapsed = None
-    
-    if args.criterion is not None:
+
+    if args.play:
+        Sequence = human_play(Guesses,Answers,answer)
+        
+    elif args.criterion is not None:
         Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,criterion=eval(args.criterion),drop_old=drop_old)
     
     elif rho is None:
