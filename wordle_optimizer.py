@@ -124,17 +124,21 @@ def human_play(guesses,answers,answer=None):
 
     Sequence = []
     while len(answers)>1:
+        round = {}
         guess = input('What is next guess? ')
-        Sequence += guess
+        round['guess'] = guess.upper()
 
         response = wordle(guess,answer)
+        round['response'] = response
 
         answers = interpret_response(guess,response,answers)
+        round['answers'] = sorted(answers)
 
         print(redact_response(response))
 
         print(','.join(sorted(set(''.join(answers)))))
-        #print(len(answers),answers)
+
+        Sequence.append(round)
         i += 1
 
     return Sequence
