@@ -48,6 +48,10 @@ mean = lambda x: np.mean(np.array(x))
 
 crra = lambda gamma=1 : lambda x: np.log(np.array(x)) if gamma==1 else (np.mean(np.array(x)**(1-gamma))/(1-gamma))
 
+entropy = lambda x: -np.mean(np.log(x)/x)
+    
+    
+
 ##########################
 
 def wordle(guess, answer):
@@ -109,6 +113,21 @@ def play_manually(guesses,answers,answer=None):
             response = wordle(guess,answer)
         answers = interpret_response(guess,response,answers)
         print(len(answers),answers)
+        i += 1
+
+    return answers,i
+
+def human_play(guesses,answers,answer=None):
+    i=0
+    while len(answers)>1:
+        guess = input('What is next guess? ')
+        if answer is None:
+            response = input('What is response to "%s"? ' % guess)
+        else:
+            response = wordle(guess,answer)
+        answers = interpret_response(guess,response,answers)
+        print(redact_response(response))
+        #print(len(answers),answers)
         i += 1
 
     return answers,i
@@ -193,21 +212,22 @@ def autoplay(days_elapsed=None,guesses=Guesses,answers=Answers,answer=Answers[0]
             
     return Sequence
 
+def redact_response(response):
+    redaction = ''
+    for c in response:
+        if c in ascii_uppercase:
+            redaction += "🟩"
+        elif c in ascii_lowercase:
+            redaction += '🟨'
+        else:
+            redaction += '⬛'
+
+    return redaction
+
 def show_play_no_spoilers(Sequence):
     """
     "No spoiler" version of play.
     """
-    def redact_response(response):
-        redaction = ''
-        for c in response:
-            if c in ascii_uppercase:
-                redaction += "🟩"
-            elif c in ascii_lowercase:
-                redaction += '🟨'
-            else:
-                redaction += '⬛'
-
-        return redaction
                 
     S = []            
     for i,round in enumerate(Sequence):
@@ -241,7 +261,6 @@ if __name__=='__main__':
 
     parser.add_argument('--keep_old',action='store_true',
                         help="Keep old answers")
-
 
     args = parser.parse_args()
 
