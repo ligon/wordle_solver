@@ -27,7 +27,7 @@ arrs = [v for v in vars if '["' in v[:5]]
 
 s=re.compile(r"\[([^]]+)\]")
 
-foo = s.findall(arrs[0])
+foo = s.findall(arrs[1]) 
 
 Answers = eval('[' + foo[0] + ']')
 Guesses = eval('[' + foo[1] + ']')
