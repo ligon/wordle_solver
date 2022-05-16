@@ -117,7 +117,8 @@ def play_manually(guesses,answers,answer=None):
 
     return answers,i
 
-def human_play(guesses,answers,answer=None):
+
+def human_play(guesses,answers,answer=None,assist=False):
     i=0
     if answer is None:
         days_elapsed,answer = puzzle_date(Answers,YMD=None)
@@ -136,7 +137,10 @@ def human_play(guesses,answers,answer=None):
 
         print(redact_response(response))
 
-        print(','.join(sorted(set(''.join(answers)))))
+        if assist:
+            print(answers)
+        else:
+            print(','.join(sorted(set(''.join(answers)))))
 
         Sequence.append(round)
         i += 1
@@ -276,6 +280,9 @@ if __name__=='__main__':
     parser.add_argument('--keep_old',action='store_true',
                         help="Keep old answers")
 
+    parser.add_argument('--assist',action='store_true',
+                        help="Show remaining possible answers")
+    
     args = parser.parse_args()
 
     drop_old = not args.keep_old
@@ -289,7 +296,7 @@ if __name__=='__main__':
         days_elapsed = None
 
     if args.play:
-        Sequence = human_play(Guesses,Answers,answer)
+        Sequence = human_play(Guesses,Answers,answer,assist=args.assist)
         
     elif args.criterion is not None:
         Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,criterion=eval(args.criterion),drop_old=drop_old)
