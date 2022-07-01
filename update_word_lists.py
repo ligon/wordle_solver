@@ -32,4 +32,10 @@ Guesses = eval(Q[2:])
 
 assert len(Guesses) > len(Answers)
 
+with open('.guesses','w') as f:
+    f.writelines("%s\n" % s for s in Guesses)
+
+with open('.answers','w') as f:
+    f.writelines("%s\n" % s for s in Answers)
+    
 Guesses = Answers + Guesses
