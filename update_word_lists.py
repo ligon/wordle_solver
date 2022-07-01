@@ -11,26 +11,24 @@ page = requests.get(baseurl)
 soup = BeautifulSoup(page.content,'html.parser')
 src = soup.find_all('script')
 
-src = [s for s in soup.find_all('script') if 'src="main' in str(s)]
+jsfile = re.compile('/wordle.[a-z0-9]+.js')
 
-js = str(src).split('"')[1]
+src = [s for s in soup.find_all('script') if jsfile.search(str(s)) is not None]
 
-assert 'main' in js
+fn = src[0].get_attribute_list('src')[0]
 
-code = requests.get(baseurl + js)
+code = str(requests.get(fn).content)
 
-code = requests.get(baseurl + js)
-csoup = BeautifulSoup(code.content,features="lxml")
-vars = str(csoup).split('var ')
+Qstart = code.index("Q=[")
+Qend = code[Qstart:].index(']')+1
+Q = code[Qstart:Qstart+Qend]
 
-arrs = [v for v in vars if '["' in v[:5]]
+Jstart = code.index("J=[")
+Jend = code[Jstart:].index(']')+1
+J = code[Jstart:Jstart+Jend]
 
-s=re.compile(r"\[([^]]+)\]")
-
-foo = s.findall(arrs[1]) 
-
-Answers = eval('[' + foo[0] + ']')
-Guesses = eval('[' + foo[1] + ']')
+Answers = eval(J[2:])
+Guesses = eval(Q[2:])
 
 assert len(Guesses) > len(Answers)
 
