@@ -37,16 +37,16 @@ fn = src[0].get_attribute_list('src')[0]
 
 code = str(requests.get(fn).content)
 
-Qstart = code.index("te=[")
+Qstart = code.index('=["aa')+1
 Qend = code[Qstart:].index(']')+1
 Q = code[Qstart:Qstart+Qend]
 
-Jstart = code.index("ee=[")
+Jstart = code.index('=["cigar"')+1
 Jend = code[Jstart:].index(']')+1
 J = code[Jstart:Jstart+Jend]
 
-Answers = eval(J[3:])
-Guesses = eval(Q[3:])
+Answers = eval(J)
+Guesses = eval(Q)
 
 assert len(Guesses) > len(Answers)
 
