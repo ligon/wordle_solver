@@ -37,11 +37,11 @@ fn = src[0].get_attribute_list('src')[0]
 
 code = str(requests.get(fn).content)
 
-Qstart = code.index('=["aa')+1
+Qstart = code.index('["aa')
 Qend = code[Qstart:].index(']')+1
 Q = code[Qstart:Qstart+Qend]
 
-Jstart = code.index('=["cigar"')+1
+Jstart = code.index('["cigar"')
 Jend = code[Jstart:].index(']')+1
 J = code[Jstart:Jstart+Jend]
 
