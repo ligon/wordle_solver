@@ -41,12 +41,16 @@ Qstart = code.index('["aa')
 Qend = code[Qstart:].index(']')+1
 Q = code[Qstart:Qstart+Qend]
 
-Jstart = code.index('["cigar"')
-Jend = code[Jstart:].index(']')+1
-J = code[Jstart:Jstart+Jend]
-
-Answers = eval(J)
 Guesses = eval(Q)
+
+if 'cigar' in Q: # NY times concatenated lists at some point?
+    Answers = Guesses[Guesses.index('cigar'):]
+    Guesses = Guesses[:Guesses.index('cigar')]
+else:
+    Jstart = code.index('["cigar"')
+    Jend = code[Jstart:].index(']')+1
+    J = code[Jstart:Jstart+Jend]
+    Answers = eval(J)
 
 assert len(Guesses) > len(Answers)
 
