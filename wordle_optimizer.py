@@ -92,6 +92,9 @@ def suggestion(guesses,answers,criterion=np.mean):
     (assuming each answer to be equally probable).
 
     """
+    if criterion is None:
+        criterion=np.mean
+
     S = scoring(guesses,answers)
     
     df = pd.DataFrame(zip(*[(s,criterion(list(S[s].values()))) for s in guesses])).T.set_index(0).squeeze().astype(float)
@@ -149,14 +152,38 @@ def human_play(guesses,answers,answer=None,assist=False):
 
 def play_against_web(guesses,answers,guess='roate',criterion=np.mean):
     i=0
+
+    Sequence = []
+
+    if drop_old: answers = answers[days_elapsed:]
+
     while len(answers)>1:
+        round = {}
+        round['guess'] = guess.upper()
+
         response = input('What is response to "%s"? ' % guess)
+        round['response'] = response
+
         answers = interpret_response(guess,response,answers)
         print(answers)
+        round['answers'] = sorted(answers)
         guess = suggestion(guesses,answers,criterion=criterion)
+        Sequence.append(round)
         i += 1
 
-    return answers,i
+    if len(answers):
+        soltn = answers[0]
+    else:
+        soltn = guess
+
+    round = {'guess':soltn.upper(),
+             'response':soltn.upper(),
+             'answers':[soltn]}
+
+    Sequence.append(round)
+
+    return Sequence
+
 
 def initial_guess(Answers,days_elapsed,criterion=mean,fn='first_round_reductions.csv.gz',drop_old=True,Guesses=Guesses):
     """Choose "optimal" initial guess.  By default this is (one of) the
@@ -189,7 +216,7 @@ def autoplay(days_elapsed=None,guesses=Guesses,answers=Answers,answer=Answers[0]
     i=0
 
     Sequence = []
-    
+
     if drop_old: answers = answers[days_elapsed:]
 
     if guess is None:
@@ -224,7 +251,7 @@ def autoplay(days_elapsed=None,guesses=Guesses,answers=Answers,answer=Answers[0]
         print('\nAnswer is %s' % soltn)
 
     Sequence.append(round)
-            
+
     return Sequence
 
 def redact_response(response):
@@ -277,6 +304,9 @@ if __name__=='__main__':
     parser.add_argument('--play','-p',action='store_true',
                         help="Human play")
 
+    parser.add_argument('--web','-w',action='store_true',
+                        help="Automatic play against web")
+
     parser.add_argument('--keep_old',action='store_true',
                         help="Keep old answers")
 
@@ -289,6 +319,14 @@ if __name__=='__main__':
     rho = args.risk_aversion
     guess = args.guess
 
+    if args.criterion is not None:
+        criterion=eval(args.criterion)
+    elif rho is not None:
+        criterion = quantile_criterion(rho)
+    else:
+        criterion = np.mean
+
+
     if args.answer is None:
         days_elapsed,answer = puzzle_date(Answers,YMD=None)
     else:
@@ -297,14 +335,15 @@ if __name__=='__main__':
 
     if args.play:
         Sequence = human_play(Guesses,Answers,answer,assist=args.assist)
-        
-    elif args.criterion is not None:
-        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,criterion=eval(args.criterion),drop_old=drop_old)
-    
-    elif rho is None:
-        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,verbose=args.verbose,drop_old=drop_old)
+
+    elif args.web:
+        if guess is None:
+            guess = initial_guess(Answers,days_elapsed,criterion=criterion,fn='first_round_reductions.csv.gz',drop_old=drop_old)
+
+        Sequence = play_against_web(Guesses,Answers,guess=guess,criterion=criterion)
+
     else:
-        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,criterion=quantile_criterion(rho),verbose=args.verbose,drop_old=drop_old)
+        Sequence = autoplay(days_elapsed,Guesses,Answers,answer,guess=guess,criterion=criterion,verbose=args.verbose,drop_old=drop_old)
 
     S = show_play_no_spoilers(Sequence)
     print("\n".join(S))
